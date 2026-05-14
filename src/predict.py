@@ -5,35 +5,8 @@ from __future__ import annotations
 import argparse
 import json
 
-from utils import flatten_prediction, load_classifier, predict_ticket
-
-
-SAMPLE_TICKETS = [
-    {
-        "ticket_subject": "URGENTE - erro 500 ao emitir fatura",
-        "ticket_description": "Bom dia, estamos sem faturar desde esta manha. O invoice fica bloqueado e aparece exception no IVA. ASAP.",
-        "client_sector": "printing",
-        "urgency_signals": "sem faturar; producao parada",
-        "previous_classification": "client_misunderstanding / medium / support_level_1",
-        "preferred_resolver": "Ana Martins",
-    },
-    {
-        "ticket_subject": "Duvida sobre permissao no CRM",
-        "ticket_description": "O utilizador nao encontra onde alterar o perfil do cliente. Talvez seja so duvida de menu.",
-        "client_sector": "packaging",
-        "urgency_signals": "sem urgencia",
-        "previous_classification": "software_bug / high / development",
-        "preferred_resolver": "",
-    },
-    {
-        "ticket_subject": "Feature request para dashboard de producao",
-        "ticket_description": "Gostavamos de uma nova opcao no dashboard para ver KPI por ordem de fabrico. Nao e erro, pode ser analisado.",
-        "client_sector": "labels",
-        "urgency_signals": "melhoria para analisar",
-        "previous_classification": "configuration_request / low / technical_support",
-        "preferred_resolver": "Marta Silva",
-    },
-]
+from examples import EXAMPLES, example_to_ticket
+from ticket_classifier import flatten_prediction, load_model, predict_ticket
 
 
 def parse_args() -> argparse.Namespace:
@@ -45,6 +18,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--previous-classification", default="", help="Previous manual classification, if any")
     parser.add_argument("--preferred-resolver", default="", help="Preferred resolver mentioned by the client, if any")
     parser.add_argument("--json", action="store_true", help="Print full JSON output")
+    parser.add_argument("--evaluate-examples", action="store_true", help="Run the built-in debug examples")
     return parser.parse_args()
 
 
@@ -76,11 +50,37 @@ def print_prediction(ticket: dict, prediction: dict, full_json: bool = False) ->
         print(f"- {item}")
 
 
+def evaluate_examples(artifact: dict) -> None:
+    matches = 0
+    checks = 0
+    for example in EXAMPLES:
+        ticket = example_to_ticket(example)
+        prediction = predict_ticket(ticket, artifact)
+        labels = flatten_prediction(prediction)
+        print_prediction(ticket, prediction)
+        expected = example.get("expected", {})
+        if expected:
+            print("expected checks:")
+            for field, expected_label in expected.items():
+                ok = labels.get(field) == expected_label
+                matches += int(ok)
+                checks += 1
+                result = "OK" if ok else "MISS"
+                print(f"- {field}: expected={expected_label} predicted={labels.get(field)} {result}")
+    if checks:
+        print("=" * 78)
+        print(f"Debug example checks: {matches}/{checks} matched")
+
+
 def main() -> None:
     args = parse_args()
-    artifact = load_classifier()
+    artifact = load_model()
+    if args.evaluate_examples:
+        evaluate_examples(artifact)
+        return
+
     ticket = ticket_from_args(args)
-    tickets = [ticket] if ticket else SAMPLE_TICKETS
+    tickets = [ticket] if ticket else [example_to_ticket(example) for example in EXAMPLES[:3]]
 
     for item in tickets:
         prediction = predict_ticket(item, artifact)

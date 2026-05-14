@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-import json
 from pathlib import Path
 
 import joblib
@@ -12,26 +11,22 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
     accuracy_score,
-    classification_report,
-    confusion_matrix,
     precision_recall_fscore_support,
 )
 from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.pipeline import Pipeline
 
-from utils import (
+from ticket_classifier import (
     DATA_PATH,
     EXPECTED_DATA_COLUMNS,
-    KEYWORD_RULES,
     MODEL_PATH,
     OUTPUT_LABELS,
+    PROJECT_ROOT,
     RANDOM_STATE,
     build_ticket_text,
+    KEYWORD_RULES,
 )
-
-
-REPORTS_DIR = Path(__file__).resolve().parents[1] / "reports"
 
 
 def make_logistic_pipeline() -> Pipeline:
@@ -92,8 +87,6 @@ def evaluate_predictions(y_true: pd.Series, y_pred: list[str]) -> dict:
         "recall_weighted": round(float(recall), 4),
         "f1_weighted": round(float(f1), 4),
         "labels": labels,
-        "classification_report": classification_report(y_true, y_pred, zero_division=0, output_dict=True),
-        "confusion_matrix": confusion_matrix(y_true, y_pred, labels=labels).tolist(),
     }
 
 
@@ -103,6 +96,13 @@ def validate_dataset(df: pd.DataFrame) -> None:
         raise ValueError(f"Dataset is missing required columns: {missing}")
     if len(df) < 500:
         raise ValueError("Dataset is too small for this POC. Expected at least 500 rows.")
+
+
+def project_relative_path(path: Path) -> str:
+    try:
+        return str(path.resolve().relative_to(PROJECT_ROOT))
+    except ValueError:
+        return str(path)
 
 
 def train_models(data_path: Path = DATA_PATH, model_path: Path = MODEL_PATH) -> dict:
@@ -147,7 +147,7 @@ def train_models(data_path: Path = DATA_PATH, model_path: Path = MODEL_PATH) -> 
         "version": "1.0",
         "created_at": datetime.now(timezone.utc).isoformat(),
         "random_state": RANDOM_STATE,
-        "dataset_path": str(data_path),
+        "dataset_path": project_relative_path(data_path),
         "dataset_rows": int(len(df)),
         "test_size": 0.20,
         "label_targets": OUTPUT_LABELS,
@@ -162,10 +162,6 @@ def train_models(data_path: Path = DATA_PATH, model_path: Path = MODEL_PATH) -> 
     model_path.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump(artifact, model_path)
 
-    REPORTS_DIR.mkdir(parents=True, exist_ok=True)
-    metrics_path = REPORTS_DIR / "model_metrics.json"
-    serializable = {key: value for key, value in artifact.items() if key != "models"}
-    metrics_path.write_text(json.dumps(serializable, indent=2, ensure_ascii=False), encoding="utf-8")
     return artifact
 
 
@@ -179,6 +175,7 @@ def print_metrics(artifact: dict) -> None:
             f"precision={values['precision_weighted']:.4f}, "
             f"recall={values['recall_weighted']:.4f}, f1={values['f1_weighted']:.4f}"
         )
+    print("\nBaseline comparison is stored inside the model artifact.")
 
 
 def main() -> None:

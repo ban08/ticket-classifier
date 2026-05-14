@@ -7,7 +7,7 @@ import random
 
 import pandas as pd
 
-from utils import DATA_PATH, EXPECTED_DATA_COLUMNS, RANDOM_STATE
+from ticket_classifier import DATA_PATH, EXPECTED_DATA_COLUMNS, RANDOM_STATE
 
 
 N_TICKETS = 1400
@@ -216,22 +216,22 @@ def choose_priority(rng: random.Random, ticket_type: str) -> str:
     return weighted_choice(rng, weights[ticket_type])
 
 
-def choose_team(rng: random.Random, ticket_type: str, priority: str) -> str:
+def choose_team(ticket_type: str, priority: str, module: str) -> str:
     if ticket_type == "software_bug":
-        return weighted_choice(rng, {"development": 0.68, "technical_support": 0.27, "support_level_1": 0.05})
+        if module in {"integrations", "general"}:
+            return "technical_support"
+        return "development" if priority in {"high", "critical"} else "technical_support"
     if ticket_type == "client_misunderstanding":
-        return weighted_choice(rng, {"support_level_1": 0.72, "training_consulting": 0.22, "technical_support": 0.06})
+        return "support_level_1"
     if ticket_type == "configuration_request":
-        return weighted_choice(rng, {"technical_support": 0.48, "training_consulting": 0.28, "support_level_1": 0.16, "development": 0.08})
+        return "technical_support"
     if ticket_type == "data_issue":
-        return weighted_choice(rng, {"technical_support": 0.50, "development": 0.28, "support_level_1": 0.12, "account_management": 0.10})
+        return "technical_support"
     if ticket_type == "training_needed":
-        return weighted_choice(rng, {"training_consulting": 0.78, "support_level_1": 0.15, "account_management": 0.07})
+        return "training_consulting"
     if ticket_type == "infrastructure_problem":
-        return weighted_choice(rng, {"infrastructure": 0.76, "technical_support": 0.19, "development": 0.05})
-    if priority == "high":
-        return weighted_choice(rng, {"account_management": 0.45, "development": 0.35, "technical_support": 0.20})
-    return weighted_choice(rng, {"account_management": 0.58, "development": 0.25, "support_level_1": 0.17})
+        return "infrastructure"
+    return "account_management"
 
 
 def wrong_previous_classification(rng: random.Random, correct_type: str, correct_priority: str, correct_team: str) -> str:
@@ -378,7 +378,7 @@ def generate_dataset(n_tickets: int = N_TICKETS, output_path: Path = DATA_PATH) 
         module = weighted_choice(rng, TYPE_MODULE_WEIGHTS[ticket_type])
         component = rng.choice(MODULE_COMPONENTS[module])
         priority = choose_priority(rng, ticket_type)
-        team = choose_team(rng, ticket_type, priority)
+        team = choose_team(ticket_type, priority, module)
         client_name, client_sector = rng.choice(CLIENTS)
         preferred_resolver = rng.choice(RESOLVERS) if rng.random() < 0.34 else ""
         urgency_signals = rng.choice(PRIORITY_SIGNALS[priority])
@@ -418,34 +418,8 @@ def generate_dataset(n_tickets: int = N_TICKETS, output_path: Path = DATA_PATH) 
     return df
 
 
-def write_generation_notes(path: Path) -> None:
-    notes = """# Synthetic Data Generation Notes
-
-This dataset is artificial and was created only for the Assignment 2 proof of concept.
-It is designed to look like Sistrade-style ERP support tickets, but it must not be
-interpreted as real Sistrade operational data.
-
-Generation choices:
-- fixed random seed for reproducibility;
-- fake client names and fake support resolvers;
-- Portuguese and English mixed text;
-- ERP vocabulary for invoicing, stock, production, accounting, CRM, reporting,
-  permissions, integrations, and general system issues;
-- intentionally noisy descriptions such as tired-user comments, incomplete context,
-  and ambiguous notes like "not sure if it is a bug or configuration";
-- previous classifications are sometimes wrong to represent realistic manual triage.
-
-The labels are deterministic because they are assigned by the generator rules. This
-makes the data useful for demonstrating an ML workflow, but it does not prove real
-performance on real customer tickets.
-"""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(notes, encoding="utf-8")
-
-
 def main() -> None:
     df = generate_dataset()
-    write_generation_notes(DATA_PATH.parent / "data_generation_notes.md")
     print(f"Generated {len(df)} synthetic tickets at {DATA_PATH}")
     print(df.head(3).to_string(index=False))
 
