@@ -1,4 +1,4 @@
-"""Train and evaluate deterministic ticket classification models."""
+"""Train and evaluate the ticket classification models."""
 
 from __future__ import annotations
 
@@ -95,7 +95,7 @@ def validate_dataset(df: pd.DataFrame) -> None:
     if missing:
         raise ValueError(f"Dataset is missing required columns: {missing}")
     if len(df) < 180:
-        raise ValueError("Dataset is too small for this POC. Expected at least 180 rows.")
+        raise ValueError("Dataset is too small. Expected at least 180 rows.")
 
 
 def project_relative_path(path: Path) -> str:
@@ -107,7 +107,7 @@ def project_relative_path(path: Path) -> str:
 
 def train_models(data_path: Path = DATA_PATH, model_path: Path = MODEL_PATH) -> dict:
     if not data_path.exists():
-        raise FileNotFoundError(f"Dataset not found at {data_path}. The committed AI-authored corpus is required.")
+        raise FileNotFoundError(f"Dataset not found at {data_path}.")
 
     df = pd.read_csv(data_path).fillna("")
     validate_dataset(df)
@@ -149,7 +149,7 @@ def train_models(data_path: Path = DATA_PATH, model_path: Path = MODEL_PATH) -> 
         "random_state": RANDOM_STATE,
         "dataset_path": project_relative_path(data_path),
         "dataset_rows": int(len(df)),
-        "dataset_kind": "committed_ai_authored_corpus",
+        "dataset_kind": "repository_dataset",
         "test_size": 0.20,
         "label_targets": OUTPUT_LABELS,
         "algorithm": "TF-IDF + LogisticRegression",

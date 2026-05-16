@@ -1,11 +1,11 @@
-"""Command-line predictions for the Sistrade ticket classifier."""
+"""Command-line predictions for the ticket classifier."""
 
 from __future__ import annotations
 
 import argparse
 import json
 
-from examples import EXAMPLES, example_to_ticket
+from sample_tickets import SAMPLE_TICKETS, sample_to_ticket
 from ticket_classifier import flatten_prediction, load_model, predict_ticket
 
 
@@ -18,7 +18,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--previous-classification", default="", help="Previous manual classification, if any")
     parser.add_argument("--preferred-resolver", default="", help="Preferred resolver mentioned by the client, if any")
     parser.add_argument("--json", action="store_true", help="Print full JSON output")
-    parser.add_argument("--evaluate-examples", action="store_true", help="Run the built-in debug examples")
+    parser.add_argument("--check-samples", action="store_true", help="Run the built-in sample checks")
     return parser.parse_args()
 
 
@@ -50,15 +50,15 @@ def print_prediction(ticket: dict, prediction: dict, full_json: bool = False) ->
         print(f"- {item}")
 
 
-def evaluate_examples(artifact: dict) -> None:
+def check_samples(artifact: dict) -> None:
     matches = 0
     checks = 0
-    for example in EXAMPLES:
-        ticket = example_to_ticket(example)
+    for sample in SAMPLE_TICKETS:
+        ticket = sample_to_ticket(sample)
         prediction = predict_ticket(ticket, artifact)
         labels = flatten_prediction(prediction)
         print_prediction(ticket, prediction)
-        expected = example.get("expected", {})
+        expected = sample.get("expected", {})
         if expected:
             print("expected checks:")
             for field, expected_label in expected.items():
@@ -69,18 +69,18 @@ def evaluate_examples(artifact: dict) -> None:
                 print(f"- {field}: expected={expected_label} predicted={labels.get(field)} {result}")
     if checks:
         print("=" * 78)
-        print(f"Debug example checks: {matches}/{checks} matched")
+        print(f"Sample checks: {matches}/{checks} matched")
 
 
 def main() -> None:
     args = parse_args()
     artifact = load_model()
-    if args.evaluate_examples:
-        evaluate_examples(artifact)
+    if args.check_samples:
+        check_samples(artifact)
         return
 
     ticket = ticket_from_args(args)
-    tickets = [ticket] if ticket else [example_to_ticket(example) for example in EXAMPLES[:3]]
+    tickets = [ticket] if ticket else [sample_to_ticket(sample) for sample in SAMPLE_TICKETS[:3]]
 
     for item in tickets:
         prediction = predict_ticket(item, artifact)

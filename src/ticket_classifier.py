@@ -1,4 +1,4 @@
-"""Core helpers for the Sistrade ticket classification project."""
+"""Shared classifier helpers."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ import joblib
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DATA_PATH = PROJECT_ROOT / "data" / "ai_generated_sistrade_tickets.csv"
+DATA_PATH = PROJECT_ROOT / "data" / "tickets_dataset.csv"
 MODEL_PATH = PROJECT_ROOT / "models" / "ticket_classifier.joblib"
 
 RANDOM_STATE = 42
@@ -196,7 +196,7 @@ def normalize_text(value: Any) -> str:
 
 
 def build_ticket_text(ticket: dict[str, Any] | Any) -> str:
-    """Build the model input text from realistic ticket fields only."""
+    """Build the model input text from ticket fields."""
     getter = ticket.get if isinstance(ticket, dict) else ticket.__getitem__
 
     def get(field: str) -> str:

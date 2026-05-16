@@ -1,4 +1,4 @@
-"""Streamlit demo for the Sistrade ticket classifier."""
+"""Streamlit interface for the ticket classifier."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ SRC_DIR = PROJECT_ROOT / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
-from examples import EXAMPLES, example_to_ticket  # noqa: E402
+from sample_tickets import SAMPLE_TICKETS, sample_to_ticket  # noqa: E402
 from ticket_classifier import MODEL_PATH, PREDICTION_LABELS, flatten_prediction, load_model, predict_ticket  # noqa: E402
 
 
@@ -26,31 +26,31 @@ def render_confidence(label: str, confidence: float) -> None:
     st.progress(min(max(float(confidence), 0.0), 1.0), text=f"{confidence:.1%}")
 
 
-def render_ticket_form(example: dict[str, str]) -> dict[str, str]:
+def render_ticket_form(sample: dict[str, str]) -> dict[str, str]:
     left, right = st.columns([2, 1])
 
     with left:
-        subject = st.text_input("Ticket subject", value=example["ticket_subject"])
+        subject = st.text_input("Ticket subject", value=sample["ticket_subject"])
         description = st.text_area(
             "Ticket description / email body",
-            value=example["ticket_description"],
+            value=sample["ticket_description"],
             height=180,
         )
         previous = st.text_input(
             "Previous/manual classification",
-            value=example["previous_classification"],
+            value=sample["previous_classification"],
         )
 
     with right:
-        client_sector = st.text_input("Client sector", value=example["client_sector"])
+        client_sector = st.text_input("Client sector", value=sample["client_sector"])
         urgency = st.text_area(
             "Urgency/context notes",
-            value=example["urgency_signals"],
+            value=sample["urgency_signals"],
             height=96,
         )
         preferred_resolver = st.text_input(
             "Preferred resolver",
-            value=example["preferred_resolver"],
+            value=sample["preferred_resolver"],
         )
 
     return {
@@ -98,7 +98,7 @@ def render_predictions(prediction: dict, show_debug: bool = False, expected: dic
 
 def main() -> None:
     st.set_page_config(page_title="Sistrade Ticket Classifier", layout="wide")
-    st.title("Sistrade Ticket Classifier POC")
+    st.title("Sistrade Ticket Classifier")
 
     with st.sidebar:
         show_debug = st.checkbox("Show debug info", value=False)
@@ -119,17 +119,17 @@ def main() -> None:
         "previous_classification": "",
         "preferred_resolver": "",
     }
-    examples = [blank, *EXAMPLES]
-    examples_by_name = {example["name"]: example for example in examples}
+    samples = [blank, *SAMPLE_TICKETS]
+    samples_by_name = {sample["name"]: sample for sample in samples}
     selected_name = st.selectbox(
-        "Example",
-        list(examples_by_name),
+        "Sample ticket",
+        list(samples_by_name),
     )
-    selected_example = examples_by_name[selected_name]
+    selected_sample = samples_by_name[selected_name]
 
-    ticket = render_ticket_form(example_to_ticket(selected_example))
+    ticket = render_ticket_form(sample_to_ticket(selected_sample))
     prediction = predict_ticket(ticket, artifact)
-    render_predictions(prediction, show_debug=show_debug, expected=selected_example.get("expected"))
+    render_predictions(prediction, show_debug=show_debug, expected=selected_sample.get("expected"))
 
 
 if __name__ == "__main__":

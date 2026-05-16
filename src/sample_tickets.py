@@ -1,4 +1,4 @@
-"""Realistic tickets used by the CLI and Streamlit demo."""
+"""Sample tickets used by the CLI and Streamlit app."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from typing import Any
 from ticket_classifier import TICKET_FIELDS
 
 
-EXAMPLES: list[dict[str, Any]] = [
+SAMPLE_TICKETS: list[dict[str, Any]] = [
     {
         "name": "Urgent invoicing bug",
         "ticket_subject": "URGENTE - erro 500 ao emitir fatura",
@@ -71,5 +71,5 @@ EXAMPLES: list[dict[str, Any]] = [
 ]
 
 
-def example_to_ticket(example: dict[str, Any]) -> dict[str, str]:
-    return {field: str(example.get(field, "")) for field in TICKET_FIELDS}
+def sample_to_ticket(sample: dict[str, Any]) -> dict[str, str]:
+    return {field: str(sample.get(field, "")) for field in TICKET_FIELDS}
