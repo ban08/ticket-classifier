@@ -38,7 +38,7 @@ def make_logistic_pipeline() -> Pipeline:
                     lowercase=True,
                     strip_accents="unicode",
                     ngram_range=(1, 2),
-                    min_df=2,
+                    min_df=1,
                     max_features=14000,
                     sublinear_tf=True,
                 ),
@@ -64,7 +64,7 @@ def make_nb_pipeline() -> Pipeline:
                     lowercase=True,
                     strip_accents="unicode",
                     ngram_range=(1, 2),
-                    min_df=2,
+                    min_df=1,
                     max_features=14000,
                 ),
             ),
@@ -94,8 +94,8 @@ def validate_dataset(df: pd.DataFrame) -> None:
     missing = [column for column in EXPECTED_DATA_COLUMNS if column not in df.columns]
     if missing:
         raise ValueError(f"Dataset is missing required columns: {missing}")
-    if len(df) < 500:
-        raise ValueError("Dataset is too small for this POC. Expected at least 500 rows.")
+    if len(df) < 180:
+        raise ValueError("Dataset is too small for this POC. Expected at least 180 rows.")
 
 
 def project_relative_path(path: Path) -> str:
@@ -107,7 +107,7 @@ def project_relative_path(path: Path) -> str:
 
 def train_models(data_path: Path = DATA_PATH, model_path: Path = MODEL_PATH) -> dict:
     if not data_path.exists():
-        raise FileNotFoundError(f"Dataset not found at {data_path}. Run `python src/generate_data.py` first.")
+        raise FileNotFoundError(f"Dataset not found at {data_path}. The committed AI-authored corpus is required.")
 
     df = pd.read_csv(data_path).fillna("")
     validate_dataset(df)
@@ -144,11 +144,12 @@ def train_models(data_path: Path = DATA_PATH, model_path: Path = MODEL_PATH) -> 
 
     artifact = {
         "project": "sistrade_ticket_classification_poc",
-        "version": "1.0",
+        "version": "1.1",
         "created_at": datetime.now(timezone.utc).isoformat(),
         "random_state": RANDOM_STATE,
         "dataset_path": project_relative_path(data_path),
         "dataset_rows": int(len(df)),
+        "dataset_kind": "committed_ai_authored_corpus",
         "test_size": 0.20,
         "label_targets": OUTPUT_LABELS,
         "algorithm": "TF-IDF + LogisticRegression",
