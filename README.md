@@ -21,7 +21,7 @@ streamlit run app/streamlit_app.py         # interactive UI
 
 ## What I built
 
-Group project for the Artificial Intelligence course (2025/26), built with a teammate whose account hosts the original repository. The work was done together; it is not separated cleanly in the git history, so I do not want to overstate a specific split here.
+A group project for the Artificial Intelligence course (2025/26); the original repository is on a teammate's account. I was a supporting contributor on a small share of the work; most of the classifier and dataset were built by teammates.
 
 ## What I would do differently
 
